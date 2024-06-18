@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 #
 # Copyright 2015, Tom Alessi, tom.alessi@gmail.com
@@ -23,7 +23,8 @@
 
 
 import json
-import urllib2
+import urllib.request
+import urllib.error
 from optparse import OptionParser
 
 
@@ -31,17 +32,17 @@ def initialize_opener(url):
     """Initialize the urllib opener w/ the supplied credentials"""
 
     # Create a password manager with our passwords
-    passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
+    passman = urllib.request.HTTPPasswordMgrWithDefaultRealm()
     passman.add_password(None, url, options.username, options.password)
 
     # Create the AuthHandler
-    authhandler = urllib2.HTTPBasicAuthHandler(passman)
+    authhandler = urllib.request.HTTPBasicAuthHandler(passman)
 
     # Create the opener
-    opener = urllib2.build_opener(authhandler)
-    urllib2.install_opener(opener)
+    opener = urllib.request.build_opener(authhandler)
+    urllib.request.install_opener(opener)
 
-    # All calls to urllib2.urlopen will now use our handler and authentication will be handled automatically
+    # All calls to urllib.request.urlopen will now use our handler and authentication will be handled automatically
 
 
 def queue_consumers():
@@ -49,7 +50,7 @@ def queue_consumers():
 
     """
 
-    # Convert the inputed list to a dictionary
+    # Convert the inputted list to a dictionary
     queue_list = dict(item.split(":") for item in options.queue_list.split(","))
 
     url = 'http://%s:15672/api/queues/%s' % (options.host,options.vhost)
@@ -58,13 +59,13 @@ def queue_consumers():
     initialize_opener(url)
 
     if options.debug:
-        print 'Executing queues_count for %s and looking for a count of queues that is at least %s' % (options.vhost, options.expected_count)
-        print 'URL: %s' % url
+        print('Executing queues_count for %s and looking for a count of queues that is at least %s' % (options.vhost, options.expected_count))
+        print('URL: %s' % url)
 
     try:
-        request = urllib2.urlopen(url)
-    except Exception, e:
-        print 'CRITICAL : RabbitMQ API Error\nError occurred querying RabbitMQ API (%s):%s' % (url,e)
+        request = urllib.request.urlopen(url)
+    except Exception as e:
+        print('CRITICAL : RabbitMQ API Error\nError occurred querying RabbitMQ API (%s):%s' % (url,e))
         exit(2)
 
     response = request.read()
@@ -84,14 +85,14 @@ def queue_consumers():
             # If there is not x consumers, we have a problem
             if int(row['consumers']) != int(queue_list[row['name']]):
                 if options.debug:
-                    print '%s has %s consumers and requires %s' % (row['name'], row['consumers'], queue_list[row['name']])
+                    print('%s has %s consumers and requires %s' % (row['name'], row['consumers'], queue_list[row['name']]))
                 exit_code = 2
 
     if exit_code == 2:
-        print 'CRITICAL : wrong number of consumers detected\n%s' % output
+        print('CRITICAL : wrong number of consumers detected\n%s' % output)
         exit(2)
     else:
-        print 'OK : All queues have the proper number of consumers\n%s'  % output
+        print('OK : All queues have the proper number of consumers\n%s'  % output)
         exit(0)
 
 
@@ -106,23 +107,23 @@ def queue_count():
     initialize_opener(url)
 
     if options.debug:
-        print 'Executing queues_count for %s and looking for a count of queues that is at least %s' % (options.vhost, options.expected_count)
-        print 'URL: %s' % url
+        print('Executing queues_count for %s and looking for a count of queues that is at least %s' % (options.vhost, options.expected_count))
+        print('URL: %s' % url)
 
     try:
-        request = urllib2.urlopen(url)
-    except Exception, e:
-        print 'CRITICAL : RabbitMQ API Error\nError occurred querying RabbitMQ API (%s):%s' % (url,e)
+        request = urllib.request.urlopen(url)
+    except Exception as e:
+        print('CRITICAL : RabbitMQ API Error\nError occurred querying RabbitMQ API (%s):%s' % (url,e))
         exit(2)
 
     response = request.read()
     raw_json = json.loads(response)
 
     if len(raw_json) != int(options.expected_count):
-        print 'CRITICAL : Expected %s queues and found %s' % (options.expected_count, len(raw_json))
+        print('CRITICAL : Expected %s queues and found %s' % (options.expected_count, len(raw_json)))
         exit(2)
     else:
-        print 'OK : %s queues found' % len(raw_json)
+        print('OK : %s queues found' % len(raw_json))
         exit(0)
 
 
@@ -140,13 +141,13 @@ def queue_synchronisation():
     initialize_opener(url)
 
     if options.debug:
-        print 'Executing queue_synchronisation for %s and looking for synchronised queues that have at least %s slave(s)' % (options.vhost, options.expected_count)
-        print 'URL: %s' % url
+        print('Executing queue_synchronisation for %s and looking for synchronised queues that have at least %s slave(s)' % (options.vhost, options.expected_count))
+        print('URL: %s' % url)
 
     try:
-        request = urllib2.urlopen(url)
-    except Exception, e:
-        print 'CRITICAL : RabbitMQ API Error\nError occurred querying RabbitMQ API (%s):%s' % (url,e)
+        request = urllib.request.urlopen(url)
+    except Exception as e:
+        print('CRITICAL : RabbitMQ API Error\nError occurred querying RabbitMQ API (%s):%s' % (url,e))
         exit(2)
 
     response = request.read()
@@ -162,14 +163,14 @@ def queue_synchronisation():
         # If there is not at least x synchronised slaves, we have a problem
         if len(row['synchronised_slave_nodes']) < int(options.expected_count):
             if options.debug:
-                print '%s has %s synchronised slaves and requires %s' % (row['name'], len(row['synchronised_slave_nodes']), options.expected_count)
+                print('%s has %s synchronised slaves and requires %s' % (row['name'], len(row['synchronised_slave_nodes']), options.expected_count))
             exit_code = 2
 
     if exit_code == 2:
-        print 'CRITICAL : un-synchronised queue detected\n%s' % output
+        print('CRITICAL : un-synchronised queue detected\n%s' % output)
         exit(2)
     else:
-        print 'OK : All queues synchronised\n%s'  % output
+        print('OK : All queues synchronised\n%s'  % output)
         exit(0)
 
 
@@ -189,13 +190,13 @@ def queue_messages():
     initialize_opener(url)
 
     if options.debug:
-        print 'Executing queue_messages for %s and looking for queues that have more than %s messages' % (options.vhost, options.expected_count)
-        print 'URL: %s' % url
+        print('Executing queue_messages for %s and looking for queues that have more than %s messages' % (options.vhost, options.expected_count))
+        print('URL: %s' % url)
 
     try:
-        request = urllib2.urlopen(url)
-    except Exception, e:
-        print 'CRITICAL : RabbitMQ API Error\nError occurred querying RabbitMQ API (%s):%s' % (url,e)
+        request = urllib.request.urlopen(url)
+    except Exception as e:
+        print('CRITICAL : RabbitMQ API Error\nError occurred querying RabbitMQ API (%s):%s' % (url,e))
         exit(2)
 
     response = request.read()
@@ -214,14 +215,14 @@ def queue_messages():
             # If there is more than x messages, we have a problem
             if row['messages'] > int(options.expected_count):
                 if options.debug:
-                    print '%s has %s messages and requires %s' % (row['name'], row['messages'], options.expected_count)
+                    print('%s has %s messages and requires %s' % (row['name'], row['messages'], options.expected_count))
                 exit_code = 2
 
     if exit_code == 2:
-        print 'CRITICAL : Too many messages in queue\n%s' % output
+        print('CRITICAL : Too many messages in queue\n%s' % output)
         exit(2)
     else:
-        print 'OK : All queues have an acceptable message count\n%s'  % output
+        print('OK : All queues have an acceptable message count\n%s'  % output)
         exit(0)
 
 
@@ -259,5 +260,5 @@ elif options.command == 'queue_messages':
 
 
 # If we got this far, there was an error
-print 'CRITICAL : unknown plugin error'
+print('CRITICAL : unknown plugin error')
 exit(2)
